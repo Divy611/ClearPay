@@ -1,3 +1,4 @@
+import 'package:clearpay/settings/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:clearpay/profile/profile.dart';
@@ -135,9 +136,7 @@ class _SidebarState extends State<Sidebar> {
       {Function? onPressed, IconData? icon, bool isEnable = false}) {
     return InkWell(
       onTap: () {
-        if (onPressed != null) {
-          onPressed();
-        }
+        if (onPressed != null) onPressed();
       },
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -188,63 +187,21 @@ class _SidebarState extends State<Sidebar> {
               child: Column(
                 children: [
                   menuListRowButton(
-                    'Help Center',
                     isEnable: true,
-                    onPressed: () {},
-                    icon: FontAwesomeIcons.circleQuestion,
-                  ),
-                  menuListRowButton(
                     'Settings and privacy',
-                    isEnable: true,
-                    onPressed: () {},
                     icon: FontAwesomeIcons.gear,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Settings()),
+                      );
+                    },
                   ),
                   menuListRowButton(
                     'Logout',
                     isEnable: true,
                     onPressed: logOut,
                     icon: FontAwesomeIcons.arrowRightFromBracket,
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                border: Border(
-                  top: BorderSide(width: 1, color: Colors.grey[200]!),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 32.5,
-                        height: 32.5,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFF334D8F).withOpacity(0.1),
-                        ),
-                        child: Icon(
-                          size: 16,
-                          FontAwesomeIcons.headset,
-                          color: Color(0xFF334D8F),
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Text(
-                        'Customer Support',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 14,
-                          color: Colors.grey[800],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

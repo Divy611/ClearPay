@@ -3,10 +3,18 @@ import "package:flutter/foundation.dart";
 import 'package:clearpay/common/enums.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:contacts_service/contacts_service.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:clearpay/transactions/paymentScreen.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+String getInitials(String name) {
+  if (name.isEmpty) return "?";
+  List<String> parts = name.trim().split(" ");
+  if (parts.length == 1) {
+    return parts[0][0].toUpperCase();
+  }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 class UserContactList extends StatefulWidget {
   final Function(String userId, String userName)? onContactSelected;
@@ -18,8 +26,8 @@ class UserContactList extends StatefulWidget {
 class _UserContactListState extends State<UserContactList> {
   bool _isLoading = true;
   String _searchQuery = '';
-  Iterable<Contact>? _contacts = [];
-  List<Contact>? _filteredContacts = [];
+  List<Contact> _contacts = [];
+  List<Contact> _filteredContacts = [];
   final TextEditingController searchController = TextEditingController();
 
   @override
@@ -35,36 +43,29 @@ class _UserContactListState extends State<UserContactList> {
   }
 
   Future<void> fetchContacts() async {
-    var status = await Permission.contacts.request();
     try {
-      if (status.isGranted) {
+      if (await FlutterContacts.requestPermission(readonly: true)) {
         setState(() {
           _isLoading = true;
         });
-        Iterable<Contact> contacts = await ContactsService.getContacts();
+        List<Contact> contacts =
+            await FlutterContacts.getContacts(withProperties: true);
         setState(() {
           _contacts = contacts;
-          _filteredContacts = contacts
-              .where(
-                (contact) =>
-                    contact.displayName != null &&
-                    contact.displayName != "???" &&
-                    contact.displayName != "-" &&
-                    contact.phones != null &&
-                    contact.phones!.isNotEmpty,
-              )
-              .toList();
+          _filteredContacts = contacts.where((contact) {
+            return contact.displayName.isNotEmpty &&
+                contact.displayName != "???" &&
+                contact.displayName != "-" &&
+                contact.phones.isNotEmpty;
+          }).toList();
           _isLoading = false;
         });
       } else {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.red[400],
-            behavior: SnackBarBehavior.floating,
-            content: Text("Permission to access contacts was denied"),
+            backgroundColor: Colors.red,
+            content: Text("Permission denied"),
           ),
         );
       }
@@ -72,30 +73,20 @@ class _UserContactListState extends State<UserContactList> {
       setState(() {
         _isLoading = false;
       });
-      if (kDebugMode) {
-        print("Error Importing Contacts: $e");
-      }
+      if (kDebugMode) print("Error: $e");
     }
   }
 
   void filterContacts(String query) {
     setState(() {
       _searchQuery = query;
-      if (_contacts != null) {
-        _filteredContacts = _contacts!
-            .where(
-              (contact) =>
-                  contact.displayName != null &&
-                  contact.displayName != "???" &&
-                  contact.displayName != "-" &&
-                  contact.phones != null &&
-                  contact.phones!.isNotEmpty &&
-                  contact.displayName!.toLowerCase().contains(
-                        query.toLowerCase(),
-                      ),
-            )
-            .toList();
-      }
+      _filteredContacts = _contacts.where((contact) {
+        return contact.displayName.isNotEmpty &&
+            contact.displayName != "???" &&
+            contact.displayName != "-" &&
+            contact.phones.isNotEmpty &&
+            contact.displayName.toLowerCase().contains(query.toLowerCase());
+      }).toList();
     });
   }
 
@@ -180,9 +171,7 @@ class _UserContactListState extends State<UserContactList> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(
-                    color: Color(0xFF334D8F),
-                  ),
+                  CircularProgressIndicator(color: Color(0xFF334D8F)),
                   SizedBox(height: 20),
                   Text(
                     "Loading contacts...",
@@ -194,15 +183,15 @@ class _UserContactListState extends State<UserContactList> {
                 ],
               ),
             )
-          : _filteredContacts == null || _filteredContacts!.isEmpty
+          : _filteredContacts.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        FontAwesomeIcons.addressBook,
                         size: 50,
                         color: Colors.grey[400],
+                        FontAwesomeIcons.addressBook,
                       ),
                       SizedBox(height: 20),
                       Text(
@@ -219,19 +208,17 @@ class _UserContactListState extends State<UserContactList> {
                 )
               : ListView.builder(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _filteredContacts!.length,
+                  itemCount: _filteredContacts.length,
                   itemBuilder: (context, index) {
-                    Contact contact = _filteredContacts![index];
-                    String phoneNumber = contact.phones!.first.value ?? '';
+                    Contact contact = _filteredContacts[index];
+                    String phoneNumber = contact.phones.first.number;
                     return FutureBuilder<bool>(
                       future: checkUserExists(phoneNumber),
                       builder: (context, snapshot) {
                         bool userExists = snapshot.data ?? false;
                         return Container(
-                          margin: EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 16,
-                          ),
+                          margin:
+                              EdgeInsets.symmetric(vertical: 6, horizontal: 16),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -245,8 +232,8 @@ class _UserContactListState extends State<UserContactList> {
                           ),
                           child: ListTile(
                             contentPadding: EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 16,
+                              vertical: 10,
+                              horizontal: 15,
                             ),
                             leading: Container(
                               width: 50,
@@ -257,30 +244,21 @@ class _UserContactListState extends State<UserContactList> {
                                     : Colors.grey[200],
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: (contact.avatar != null &&
-                                      contact.avatar!.isNotEmpty)
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.memory(
-                                        contact.avatar!,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
-                                  : Center(
-                                      child: Text(
-                                        contact.initials(),
-                                        style: GoogleFonts.montserrat(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: userExists
-                                              ? Color(0xFF334D8F)
-                                              : Colors.grey[600],
-                                        ),
-                                      ),
-                                    ),
+                              child: Center(
+                                child: Text(
+                                  getInitials(contact.displayName),
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: userExists
+                                        ? Color(0xFF334D8F)
+                                        : Colors.grey[600],
+                                  ),
+                                ),
+                              ),
                             ),
                             title: Text(
-                              contact.displayName ?? '',
+                              contact.displayName,
                               style: GoogleFonts.montserrat(
                                 fontSize: 16,
                                 color: Colors.black87,
@@ -290,7 +268,7 @@ class _UserContactListState extends State<UserContactList> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SizedBox(height: 4),
+                                SizedBox(height: 5),
                                 Text(
                                   phoneNumber,
                                   style: GoogleFonts.montserrat(
@@ -298,7 +276,7 @@ class _UserContactListState extends State<UserContactList> {
                                     color: Colors.grey[600],
                                   ),
                                 ),
-                                SizedBox(height: 4),
+                                SizedBox(height: 5),
                                 Text(
                                   userExists
                                       ? "Registered on ClearPay"
@@ -335,19 +313,23 @@ class _UserContactListState extends State<UserContactList> {
                                 QuerySnapshot userQuery =
                                     await FirebaseFirestore.instance
                                         .collection(USERS)
-                                        .where('phone',
-                                            isEqualTo: phoneNumber.replaceAll(
-                                                RegExp(r'[^\d+]'), ''))
+                                        .where(
+                                          'phone',
+                                          isEqualTo: phoneNumber.replaceAll(
+                                            RegExp(r'[^\d+]'),
+                                            '',
+                                          ),
+                                        )
                                         .limit(1)
                                         .get();
                                 if (userQuery.docs.isNotEmpty) {
                                   var userData = userQuery.docs.first.data()
                                       as Map<String, dynamic>;
-
                                   if (widget.onContactSelected != null) {
                                     widget.onContactSelected!(
-                                        userData['userId'],
-                                        userData['displayName']);
+                                      userData['userId'],
+                                      userData['displayName'],
+                                    );
                                     Navigator.pop(context);
                                   } else {
                                     Navigator.push(
@@ -355,7 +337,7 @@ class _UserContactListState extends State<UserContactList> {
                                       MaterialPageRoute(
                                         builder: (context) => PaymentScreen(
                                           userId: userData['userId'],
-                                          userName: contact.displayName ?? '',
+                                          userName: contact.displayName,
                                           payeeName: userData['displayName'],
                                         ),
                                       ),
@@ -365,10 +347,11 @@ class _UserContactListState extends State<UserContactList> {
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(
-                                        "This contact is not registered on ClearPay"),
-                                    backgroundColor: Colors.orange[400],
                                     behavior: SnackBarBehavior.floating,
+                                    backgroundColor: Colors.orange[400],
+                                    content: Text(
+                                      "This contact is not registered on ClearPay",
+                                    ),
                                   ),
                                 );
                               }
@@ -387,20 +370,18 @@ class ContactPaymentScreen extends StatefulWidget {
   final Contact contact;
   const ContactPaymentScreen({super.key, required this.contact});
   @override
-  State<ContactPaymentScreen> createState() =>
-      _ContactPaymentScreenState(contact);
+  // ignore: no_logic_in_create_state
+  State<ContactPaymentScreen> createState() => PaymentScreenState(contact);
 }
 
-class _ContactPaymentScreenState extends State<ContactPaymentScreen> {
+class PaymentScreenState extends State<ContactPaymentScreen> {
   bool isExpanded = false;
   final Contact contact;
-  _ContactPaymentScreenState(this.contact);
+  PaymentScreenState(this.contact);
   void toggleContainer() {
-    setState(
-      () {
-        isExpanded = !isExpanded;
-      },
-    );
+    setState(() {
+      isExpanded = !isExpanded;
+    });
   }
 
   @override
@@ -419,9 +400,7 @@ class _ContactPaymentScreenState extends State<ContactPaymentScreen> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    icon: Icon(
-                      FontAwesomeIcons.xmark,
-                    ),
+                    icon: Icon(FontAwesomeIcons.xmark),
                   ),
                   PopupMenuButton<Choice>(
                     onSelected: (d) {
@@ -429,53 +408,46 @@ class _ContactPaymentScreenState extends State<ContactPaymentScreen> {
                       } else if (d.title == "Send FeedBack") {}
                     },
                     itemBuilder: (BuildContext context) {
-                      return choices.map(
-                        (Choice choice) {
-                          return PopupMenuItem<Choice>(
-                            value: choice,
-                            child: Text(
-                              choice.title,
-                              style: GoogleFonts.montserrat(
-                                color: Colors.black,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                              ),
+                      return choices.map((Choice choice) {
+                        return PopupMenuItem<Choice>(
+                          value: choice,
+                          child: Text(
+                            choice.title,
+                            style: GoogleFonts.montserrat(
+                              color: Colors.black,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
                             ),
-                          );
-                        },
-                      ).toList();
+                          ),
+                        );
+                      }).toList();
                     },
                   ),
                 ],
               ),
               SizedBox(height: 10),
-              (contact.avatar != null && contact.avatar!.isNotEmpty)
-                  ? CircleAvatar(
-                      radius: 25,
-                      backgroundImage: MemoryImage(contact.avatar!),
-                    )
-                  : CircleAvatar(
-                      radius: 25,
-                      child: Text(
-                        contact.initials(),
-                        style: GoogleFonts.montserrat(),
-                      ),
-                    ),
+              CircleAvatar(
+                radius: 25,
+                child: Text(
+                  style: GoogleFonts.montserrat(),
+                  getInitials(contact.displayName),
+                ),
+              ),
               SizedBox(height: 10),
               Text(
-                "Paying ${contact.displayName ?? ''}",
+                "Paying ${contact.displayName}",
                 style: GoogleFonts.montserrat(fontSize: 20),
               ),
               SizedBox(height: 5),
               Text(
-                "Phone: ${contact.phones!.elementAt(0).value ?? ''}",
+                "Phone: ${contact.phones.elementAt(0).number}",
                 style: GoogleFonts.montserrat(fontSize: 16.5),
               ),
               SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
+                  SizedBox(
                     width: 30,
                     child: Text(
                       "₹",
@@ -493,9 +465,7 @@ class _ContactPaymentScreenState extends State<ContactPaymentScreen> {
                       decoration: InputDecoration(
                         border: InputBorder.none,
                         hintText: "0",
-                        hintStyle: GoogleFonts.montserrat(
-                          fontSize: 35,
-                        ),
+                        hintStyle: GoogleFonts.montserrat(fontSize: 35),
                       ),
                     ),
                   ),
@@ -510,9 +480,7 @@ class _ContactPaymentScreenState extends State<ContactPaymentScreen> {
                 height: 70,
                 decoration: BoxDecoration(
                   color: Colors.blue[700],
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(12.5),
-                  ),
+                  borderRadius: BorderRadius.all(Radius.circular(12.5)),
                 ),
                 child: Center(
                   child: Text(
@@ -583,18 +551,16 @@ class _ContactPaymentScreenState extends State<ContactPaymentScreen> {
                           ),
                           IconButton(
                             onPressed: () {
-                              setState(
-                                () {
-                                  isExpanded = !isExpanded;
-                                },
-                              );
+                              setState(() {
+                                isExpanded = !isExpanded;
+                              });
                             },
                             icon: Icon(
                               isExpanded
                                   ? FontAwesomeIcons.chevronDown
                                   : FontAwesomeIcons.chevronUp,
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -635,7 +601,7 @@ class _ContactPaymentScreenState extends State<ContactPaymentScreen> {
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -656,5 +622,8 @@ class Choice {
 List<Choice> choices = <Choice>[
   Choice(title: 'Get Help', icon: Icons.directions_car, isEnable: true),
   Choice(
-      title: 'Send FeedBack', icon: Icons.directions_railway, isEnable: true),
+    title: 'Send FeedBack',
+    icon: Icons.directions_railway,
+    isEnable: true,
+  ),
 ];

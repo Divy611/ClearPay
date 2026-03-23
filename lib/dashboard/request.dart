@@ -48,8 +48,7 @@ class RequestState extends State<Request> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final requestsState = Provider.of<RequestsState>(context);
-
+    final requests = Provider.of<RequestsState>(context);
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -62,32 +61,20 @@ class RequestState extends State<Request> with SingleTickerProviderStateMixin {
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: fetchRequests,
-            icon: Icon(
-              size: 18,
-              color: Colors.white,
-              FontAwesomeIcons.arrowsRotate,
-            ),
-          ),
-        ],
       ),
       body: isLoading
           ? Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF334D8F),
-              ),
+              child: CircularProgressIndicator(color: Color(0xFF334D8F)),
             )
           : Column(
               children: [
-                buildTabBar(requestsState),
+                tabBar(requests),
                 Expanded(
                   child: TabBarView(
                     controller: tabController,
                     children: [
-                      buildPendingRequestsTab(requestsState),
-                      buildCompletedRequestsTab(requestsState),
+                      pendingRequestsTab(requests),
+                      completedRequestsTab(requests),
                     ],
                   ),
                 ),
@@ -120,7 +107,7 @@ class RequestState extends State<Request> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget buildTabBar(RequestsState requestsState) {
+  Widget tabBar(RequestsState requestsState) {
     int pendingCount = requestsState.pendingSentRequests.length +
         requestsState.pendingReceivedRequests.length;
 
@@ -197,7 +184,7 @@ class RequestState extends State<Request> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget buildPendingRequestsTab(RequestsState requestsState) {
+  Widget pendingRequestsTab(RequestsState requestsState) {
     return RefreshIndicator(
       onRefresh: fetchRequests,
       child: SingleChildScrollView(
@@ -259,7 +246,7 @@ class RequestState extends State<Request> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget buildCompletedRequestsTab(RequestsState requestsState) {
+  Widget completedRequestsTab(RequestsState requestsState) {
     return RefreshIndicator(
       onRefresh: fetchRequests,
       child: requestsState.completedRequests.isEmpty

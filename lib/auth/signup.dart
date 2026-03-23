@@ -267,6 +267,7 @@ class _SignUpState extends State<SignUp> {
     loader.showLoader(context);
     var state = Provider.of<AuthState>(context, listen: false);
     UserModel user = UserModel(
+      balance: 0,
       phone: phoneController.text,
       displayName: nameController.text,
       email: emailController.text.toLowerCase(),

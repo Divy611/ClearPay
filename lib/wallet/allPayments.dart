@@ -21,10 +21,11 @@ class _TransactionHistoryState extends State<TransactionHistory>
   void initState() {
     super.initState();
     tabController = TabController(length: 3, vsync: this);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final transactionState =
-          Provider.of<TransactionState>(context, listen: false);
+      final transactionState = Provider.of<TransactionState>(
+        context,
+        listen: false,
+      );
       transactionState.getDataFromDatabase(context);
     });
   }
@@ -37,9 +38,8 @@ class _TransactionHistoryState extends State<TransactionHistory>
 
   @override
   Widget build(BuildContext context) {
-    final transactionState = Provider.of<TransactionState>(context);
-    final authState = Provider.of<AuthState>(context);
-
+    final transaction = Provider.of<TransactionState>(context);
+    final auth = Provider.of<AuthState>(context);
     return Scaffold(
       backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -57,16 +57,16 @@ class _TransactionHistoryState extends State<TransactionHistory>
           child: Container(
             color: Color(0xFF334D8F),
             child: TabBar(
+              indicatorWeight: 3,
               controller: tabController,
               indicatorColor: Colors.white,
-              indicatorWeight: 3,
               labelStyle: GoogleFonts.montserrat(
-                fontWeight: FontWeight.w600,
                 fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
               unselectedLabelStyle: GoogleFonts.montserrat(
-                fontWeight: FontWeight.w500,
                 fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
               tabs: [
                 Tab(
@@ -98,23 +98,23 @@ class _TransactionHistoryState extends State<TransactionHistory>
           ),
         ),
       ),
-      body: transactionState.isBusy
+      body: transaction.isBusy
           ? Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: tabController,
               children: [
                 buildTransactionList(
-                  transactionState.userTransactionsList ?? [],
-                  authState,
+                  transaction.userTransactionsList ?? [],
+                  auth,
                 ),
                 buildTransactionList(
-                  transactionState.transactionsList ?? [],
-                  authState,
+                  transaction.transactionsList ?? [],
+                  auth,
                   sentOnly: true,
                 ),
                 buildTransactionList(
-                  transactionState.recipientTransactionsList ?? [],
-                  authState,
+                  transaction.recipientTransactionsList ?? [],
+                  auth,
                   receivedOnly: true,
                 ),
               ],

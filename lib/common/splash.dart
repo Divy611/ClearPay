@@ -4,19 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:clearpay/common/enums.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:clearpay/state/authstate.dart';
 import 'package:clearpay/auth/onboarding.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:clearpay/dashboard/dashboard.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
   @override
-  _SplashPageState createState() => _SplashPageState();
+  State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
-    with SingleTickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
+  bool isInitializing = true;
   int currentMessageIndex = 0;
   late AnimationController controller;
   late Animation<double> fadeAnimation;
@@ -32,37 +32,20 @@ class _SplashPageState extends State<SplashPage>
   void initState() {
     controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 2000),
+      duration: Duration(milliseconds: 1000),
     );
-
     fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: controller,
-        curve: Interval(0.0, 0.6, curve: Curves.easeIn),
+        curve: Curves.easeInOut,
       ),
     );
     rotateAnimation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
       CurvedAnimation(parent: controller, curve: Curves.easeInOut),
     );
-
     controller.repeat(reverse: false);
-    _startMessageCycle();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      timer();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => timer());
     super.initState();
-  }
-
-  void _startMessageCycle() {
-    Future.delayed(Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          currentMessageIndex =
-              (currentMessageIndex + 1) % loadingMessages.length;
-        });
-        _startMessageCycle();
-      }
-    });
   }
 
   @override
@@ -72,12 +55,25 @@ class _SplashPageState extends State<SplashPage>
   }
 
   void timer() async {
-    Future.delayed(Duration(seconds: 1)).then(
-      (_) {
-        var state = Provider.of<AuthState>(context, listen: false);
-        state.getCurrentUser();
-      },
-    );
+    try {
+      await Future.delayed(Duration(milliseconds: 1000));
+      var auth = Provider.of<AuthState>(context, listen: false);
+      await auth.getCurrentUser();
+      await Future.delayed(Duration(milliseconds: 500));
+      if (mounted) {
+        setState(() {
+          isInitializing = false;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        var auth = Provider.of<AuthState>(context, listen: false);
+        auth.authStatus = AuthStatus.NOT_LOGGED_IN;
+        setState(() {
+          isInitializing = false;
+        });
+      }
+    }
   }
 
   Widget body() {
@@ -187,11 +183,11 @@ class _SplashPageState extends State<SplashPage>
 
   @override
   Widget build(BuildContext context) {
-    var state = Provider.of<AuthState>(context, listen: false);
+    var auth = Provider.of<AuthState>(context);
     return Scaffold(
-      body: state.authStatus == AuthStatus.NOT_DETERMINED
+      body: auth.authStatus == AuthStatus.NOT_DETERMINED
           ? body()
-          : state.authStatus == AuthStatus.NOT_LOGGED_IN
+          : auth.authStatus == AuthStatus.NOT_LOGGED_IN
               ? OnboardingPage()
               : DashBoard(),
     );

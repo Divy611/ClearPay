@@ -33,43 +33,21 @@ class GenerateQR extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        // leading: IconButton(
-        //   icon: Icon(Icons.arrow_back, color: Colors.grey[800]),
-        //   onPressed: () {
-        //     var app = Provider.of<AppState>(context, listen: false);
-        //     app.pageController.animateToPage(
-        //       0,
-        //       curve: Curves.easeInOut,
-        //       duration: Duration(milliseconds: 300),
-        //     );
-        //     app.setPageIndex = 0;
-        //   },
-        // ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              size: 20,
-              color: Colors.grey[800],
-              FontAwesomeIcons.ellipsisVertical,
-            ),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            buildQRHeader(),
-            buildQRCodeSection(context),
-            buildInfoSection(),
-            buildActionButtons(),
+            qrHeader(),
+            qrCodeSection(context),
+            infoSection(),
+            //actionButtons(),
           ],
         ),
       ),
     );
   }
 
-  Widget buildQRHeader() {
+  Widget qrHeader() {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
@@ -97,7 +75,7 @@ class GenerateQR extends StatelessWidget {
     );
   }
 
-  Widget buildQRCodeSection(BuildContext context) {
+  Widget qrCodeSection(BuildContext context) {
     final auth = Provider.of<AuthState>(context);
     return Container(
       width: double.infinity,
@@ -219,20 +197,20 @@ class GenerateQR extends StatelessWidget {
     );
   }
 
-  Widget buildInfoSection() {
+  Widget infoSection() {
     return Container(
       padding: EdgeInsets.all(20),
       child: Column(
         children: [
-          buildInfoItem(
+          infoItem(
             'Secure Payments',
             'This QR code is encrypted and secure for transactions',
             FontAwesomeIcons.shieldHalved,
           ),
           SizedBox(height: 17),
-          buildInfoItem(
+          infoItem(
             'Instant Notification',
-            'Get notified instantly when someone pays you',
+            'Get notified when someone pays you',
             FontAwesomeIcons.bell,
           ),
         ],
@@ -240,7 +218,7 @@ class GenerateQR extends StatelessWidget {
     );
   }
 
-  Widget buildInfoItem(String title, String description, IconData icon) {
+  Widget infoItem(String title, String description, IconData icon) {
     return Row(
       children: [
         Container(
@@ -280,7 +258,7 @@ class GenerateQR extends StatelessWidget {
     );
   }
 
-  Widget buildActionButtons() {
+  Widget actionButtons() {
     return Container(
       padding: EdgeInsets.all(20),
       child: Row(

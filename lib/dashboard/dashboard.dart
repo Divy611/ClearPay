@@ -9,9 +9,9 @@ import 'package:clearpay/rewards/rewards.dart';
 import 'package:clearpay/state/authstate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:clearpay/dashboard/request.dart';
+import 'package:clearpay/aiChat/chatWithAI.dart';
 import 'package:clearpay/dashboard/mandates.dart';
 import 'package:clearpay/dashboard/generate.dart';
-import 'package:clearpay/common/mediaplayer.dart';
 import 'package:clearpay/dashboard/paymoney.dart';
 import 'package:clearpay/dashboard/approvals.dart';
 import 'package:clearpay/transactions/transactions.dart';
@@ -34,6 +34,26 @@ class DashBoard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: Sidebar(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ChatWithAI()),
+          );
+        },
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(15)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF334D8F), Color(0xFF4A6FD1)],
+            ),
+          ),
+          child: Icon(color: Colors.white, FontAwesomeIcons.comment),
+        ),
+      ),
       bottomNavigationBar: MainNavBar(),
       body: Stack(
         children: [
@@ -46,13 +66,6 @@ class DashBoard extends StatelessWidget {
                     Wallet(),
                     Rewards(),
                     Transactions(),
-                    //ProfilePage(),
-                    //PayMoney(),
-                    //Requests(),
-                    //Approvals(),
-                    //Mandates(),
-                    //ScanQR(),
-                    //GenerateQR(globalKey: globalKey),
                   ];
                   return PageView(
                     children: pages,
@@ -86,9 +99,8 @@ class DashBoard extends StatelessWidget {
                   end: Alignment.bottomRight,
                   colors: [Color(0xFF334D8F), Color(0xFF4A6FD1)],
                 ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(30),
                 ),
               ),
               child: Column(
@@ -183,7 +195,7 @@ class DashBoard extends StatelessWidget {
               ),
             ),
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+              padding: EdgeInsets.symmetric(horizontal: 15, vertical: 25),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -199,14 +211,14 @@ class DashBoard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      buildQuickActionCard(
+                      quickActionCard(
                         context,
                         FontAwesomeIcons.wallet,
                         'My Wallet',
                         Colors.blue[700]!,
                         Wallet(),
                       ),
-                      buildQuickActionCard(
+                      quickActionCard(
                         context,
                         FontAwesomeIcons.clockRotateLeft,
                         'Transactions',
@@ -231,51 +243,50 @@ class DashBoard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(height: 15),
                   GridView.count(
                     shrinkWrap: true,
                     crossAxisCount: 3,
                     mainAxisSpacing: 15,
                     crossAxisSpacing: 15,
-                    childAspectRatio: 1.1,
+                    childAspectRatio: 0.8,
                     physics: NeverScrollableScrollPhysics(),
                     children: [
-                      buildServiceCard(
+                      serviceCard(
                         context,
                         FontAwesomeIcons.moneyBill1Wave,
                         'Pay Money',
                         Colors.green[600]!,
                         PayMoney(),
                       ),
-                      buildServiceCard(
+                      serviceCard(
                         context,
                         FontAwesomeIcons.sackDollar,
                         'Request Money',
                         Colors.orange[600]!,
                         Request(),
                       ),
-                      buildServiceCard(
+                      serviceCard(
                         context,
                         FontAwesomeIcons.userCheck,
                         'Approvals',
                         Colors.purple[600]!,
                         Approvals(),
                       ),
-                      buildServiceCard(
+                      serviceCard(
                         context,
                         FontAwesomeIcons.file,
                         'Mandates',
                         Colors.blue[600]!,
                         Mandates(),
                       ),
-                      buildServiceCard(
+                      serviceCard(
                         context,
                         FontAwesomeIcons.qrcode,
                         'Scan QR',
                         Colors.red[600]!,
                         ScanQR(),
                       ),
-                      buildServiceCard(
+                      serviceCard(
                         context,
                         FontAwesomeIcons.mobileScreenButton,
                         'Generate QR',
@@ -288,14 +299,14 @@ class DashBoard extends StatelessWidget {
               ),
             ),
             SizedBox(height: 15),
-            MiniMediaplayer(),
+            //MiniMediaplayer(),
           ],
         ),
       ),
     );
   }
 
-  Widget buildQuickActionCard(BuildContext context, IconData icon, String label,
+  Widget quickActionCard(BuildContext context, IconData icon, String label,
       Color color, Widget buttonRoute) {
     return InkWell(
       onTap: () {
@@ -307,8 +318,8 @@ class DashBoard extends StatelessWidget {
         );
       },
       child: Container(
+        width: MediaQuery.of(context).size.width / 2.25,
         padding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-        width: MediaQuery.of(context).size.width / 2.35,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
@@ -323,20 +334,23 @@ class DashBoard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(10),
+              padding: EdgeInsets.all(7.5),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 22),
             ),
-            SizedBox(width: 10.5),
-            Text(
-              label,
-              style: GoogleFonts.montserrat(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
+            SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  color: Colors.grey[800],
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -345,51 +359,53 @@ class DashBoard extends StatelessWidget {
     );
   }
 
-  Widget buildServiceCard(BuildContext context, IconData icon, String title,
+  Widget serviceCard(BuildContext context, IconData icon, String title,
       Color color, Widget buttonRoute) {
-    return InkWell(
-      onTap: () {
-        // var app = Provider.of<AppState>(context, listen: false);
-        // app.setPageIndex = pageIndex;
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => buttonRoute),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 8,
-              spreadRadius: 1,
-              color: Colors.black.withOpacity(0.05),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+    return SizedBox(
+      height: 150,
+      width: MediaQuery.of(context).size.width / 4,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => buttonRoute),
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 8,
+                spreadRadius: 1,
+                color: Colors.black.withOpacity(0.05),
               ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(
-                fontSize: 12,
-                color: Colors.grey[800],
-                fontWeight: FontWeight.w600,
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
               ),
-            ),
-          ],
+              SizedBox(height: 10),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  color: Colors.grey[800],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

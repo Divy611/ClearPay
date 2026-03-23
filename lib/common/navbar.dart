@@ -80,8 +80,8 @@ class _MainNavBarState extends State<MainNavBar> {
                   null,
                   3,
                   icon: 3 == state.pageIndex
-                      ? FontAwesomeIcons.solidStar
-                      : FontAwesomeIcons.star,
+                      ? FontAwesomeIcons.moneyBillTransfer
+                      : FontAwesomeIcons.moneyBillTransfer,
                   isCustomIcon: true,
                   "Transactions",
                   style: GoogleFonts.montserrat(

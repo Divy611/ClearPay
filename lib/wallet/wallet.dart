@@ -1,9 +1,9 @@
-import 'package:clearpay/state/transactionState.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:clearpay/state/authstate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:clearpay/wallet/allPayments.dart';
+import 'package:clearpay/state/transactionState.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class Wallet extends StatelessWidget {
@@ -23,7 +23,6 @@ class Wallet extends StatelessWidget {
     final DateTime date = DateTime.parse(dateString);
     final DateTime now = DateTime.now();
     final Duration difference = now.difference(date);
-
     if (difference.inDays == 0) {
       return 'Today';
     } else if (difference.inDays == 1) {
@@ -66,33 +65,31 @@ class Wallet extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              size: 20,
-              color: Colors.white,
-              FontAwesomeIcons.ellipsisVertical,
-            ),
-          ),
-        ],
+        //actions: [
+        //  IconButton(
+        //    onPressed: () {},
+        //    icon: Icon(
+        //      size: 20,
+        //      color: Colors.white,
+        //      FontAwesomeIcons.ellipsisVertical,
+        //    ),
+        //  ),
+        //],
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            buildBalanceCard(context),
+            balanceCard(context),
             SizedBox(height: 20),
-            buildQuickActions(context),
-            SizedBox(height: 20),
-            buildTransactionHistory(context),
+            transactionHistory(context),
           ],
         ),
       ),
     );
   }
 
-  Widget buildBalanceCard(BuildContext context) {
+  Widget balanceCard(BuildContext context) {
     var auth = Provider.of<AuthState>(context, listen: false);
     return Container(
       width: double.infinity,
@@ -185,63 +182,7 @@ class Wallet extends StatelessWidget {
     );
   }
 
-  Widget buildQuickActions(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Quick Actions',
-            style: GoogleFonts.montserrat(
-              fontSize: 18,
-              color: Colors.grey[800],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              buildActionButton(
-                FontAwesomeIcons.moneyBillTransfer,
-                'Send Money',
-                Colors.blue[700]!,
-                () {},
-              ),
-              buildActionButton(
-                FontAwesomeIcons.creditCard,
-                'Pay Bills',
-                Colors.purple[700]!,
-                () {},
-              ),
-              buildActionButton(
-                FontAwesomeIcons.clockRotateLeft,
-                'History',
-                Colors.orange[700]!,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TransactionHistory(),
-                    ),
-                  );
-                },
-              ),
-              buildActionButton(
-                FontAwesomeIcons.rightLeft,
-                'Exchange',
-                Colors.green[700]!,
-                () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildActionButton(
+  Widget actionButton(
       IconData icon, String label, Color color, void Function() onPress) {
     return IconButton(
       onPressed: onPress,
@@ -270,8 +211,8 @@ class Wallet extends StatelessWidget {
     );
   }
 
-  Widget buildTransactionHistory(BuildContext context) {
-    final state = Provider.of<AuthState>(context, listen: false);
+  Widget transactionHistory(BuildContext context) {
+    final auth = Provider.of<AuthState>(context, listen: false);
     final transaction = Provider.of<TransactionState>(context);
     return RefreshIndicator(
       onRefresh: () async {
@@ -322,9 +263,9 @@ class Wallet extends StatelessWidget {
                       child: Column(
                         children: [
                           Icon(
-                            FontAwesomeIcons.clockRotateLeft,
                             size: 40,
                             color: Colors.grey[400],
+                            FontAwesomeIcons.clockRotateLeft,
                           ),
                           SizedBox(height: 15),
                           Text(
@@ -347,9 +288,8 @@ class Wallet extends StatelessWidget {
                       (index) {
                         final tx = transaction.userTransactionsList![index];
                         final bool isDebit =
-                            tx.senderId == state.userModel!.userId;
+                            tx.senderId == auth.userModel!.userId;
                         final String formattedDate = formatDate(tx.createdAt!);
-
                         return buildTransactionItem(
                           isDebit ? tx.recipientName! : tx.senderName!,
                           isDebit ? 'Sent' : 'Received',

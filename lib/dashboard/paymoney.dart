@@ -1,9 +1,9 @@
-import 'package:clearpay/dashboard/payContact.dart';
-import 'package:clearpay/dashboard/scan.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:clearpay/dashboard/scan.dart';
 import 'package:clearpay/state/authstate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:clearpay/dashboard/payContact.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class PayMoney extends StatelessWidget {
@@ -70,10 +70,7 @@ class PayMoney extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Color(0xFF334D8F),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
       child: Padding(
         padding: EdgeInsets.all(20),
@@ -88,7 +85,7 @@ class PayMoney extends StatelessWidget {
                 color: Colors.white.withOpacity(0.8),
               ),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: 10),
             Row(
               children: [
                 Text(
@@ -133,28 +130,21 @@ class PayMoney extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              buildPaymentOptionItem(
+              paymentOptionItem(
                 context,
                 FontAwesomeIcons.qrcode,
                 'Scan QR',
                 Colors.purple[600]!,
                 ScanQR(),
               ),
-              buildPaymentOptionItem(
-                context,
-                FontAwesomeIcons.mobileScreen,
-                'Payment ID',
-                Colors.blue[600]!,
-                Scaffold(),
-              ),
-              buildPaymentOptionItem(
+              paymentOptionItem(
                 context,
                 FontAwesomeIcons.addressBook,
                 'Contacts',
                 Colors.green[600]!,
                 UserContactList(),
               ),
-              buildPaymentOptionItem(
+              paymentOptionItem(
                 context,
                 FontAwesomeIcons.buildingColumns,
                 'Bank',
@@ -168,8 +158,8 @@ class PayMoney extends StatelessWidget {
     );
   }
 
-  Widget buildPaymentOptionItem(BuildContext context, IconData icon,
-      String label, Color color, Widget buttonRoute) {
+  Widget paymentOptionItem(BuildContext context, IconData icon, String label,
+      Color color, Widget buttonRoute) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -189,13 +179,13 @@ class PayMoney extends StatelessWidget {
             ),
             child: Icon(icon, size: 24, color: color),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 10),
           Text(
             label,
             style: GoogleFonts.montserrat(
               fontSize: 12,
-              fontWeight: FontWeight.w500,
               color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -216,12 +206,17 @@ class PayMoney extends StatelessWidget {
                 'Recent Contacts',
                 style: GoogleFonts.montserrat(
                   fontSize: 18,
-                  fontWeight: FontWeight.w600,
                   color: Colors.grey[800],
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => UserContactList()),
+                  );
+                },
                 child: Text(
                   'View All',
                   style: GoogleFonts.montserrat(
@@ -238,11 +233,11 @@ class PayMoney extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                buildContactItem(context, 'John', 'D', Colors.blue[700]!),
-                buildContactItem(context, 'Sarah', 'M', Colors.purple[700]!),
-                buildContactItem(context, 'Mike', 'T', Colors.green[700]!),
-                buildContactItem(context, 'Emma', 'R', Colors.orange[700]!),
-                buildContactItem(context, 'Alex', 'K', Colors.red[700]!),
+                contactItem(context, 'John', 'D', Colors.blue[700]!),
+                contactItem(context, 'Sarah', 'M', Colors.purple[700]!),
+                contactItem(context, 'Mike', 'T', Colors.green[700]!),
+                contactItem(context, 'Emma', 'R', Colors.orange[700]!),
+                contactItem(context, 'Alex', 'K', Colors.red[700]!),
               ],
             ),
           ),
@@ -251,7 +246,7 @@ class PayMoney extends StatelessWidget {
     );
   }
 
-  Widget buildContactItem(
+  Widget contactItem(
       BuildContext context, String name, String initial, Color color) {
     return Container(
       margin: EdgeInsets.only(right: 15),
@@ -276,7 +271,7 @@ class PayMoney extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 10),
           Text(
             name,
             style: GoogleFonts.montserrat(
@@ -312,24 +307,24 @@ class PayMoney extends StatelessWidget {
             'Enter Amount',
             style: GoogleFonts.montserrat(
               fontSize: 16,
-              fontWeight: FontWeight.w600,
               color: Colors.grey[800],
+              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: 15),
           TextField(
             style: GoogleFonts.montserrat(
               fontSize: 24,
-              fontWeight: FontWeight.bold,
               color: Colors.grey[800],
+              fontWeight: FontWeight.bold,
             ),
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               hintText: '₹ 0.00',
               hintStyle: GoogleFonts.montserrat(
                 fontSize: 24,
-                fontWeight: FontWeight.bold,
                 color: Colors.grey[400],
+                fontWeight: FontWeight.bold,
               ),
               prefixIcon: Icon(
                 size: 20,
@@ -338,17 +333,11 @@ class PayMoney extends StatelessWidget {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(
-                  width: 1,
-                  color: Colors.grey[300]!,
-                ),
+                borderSide: BorderSide(width: 1, color: Colors.grey[300]!),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(
-                  width: 2,
-                  color: Color(0xFF334D8F),
-                ),
+                borderSide: BorderSide(width: 2, color: Color(0xFF334D8F)),
               ),
               contentPadding: EdgeInsets.symmetric(
                 vertical: 15,
@@ -361,8 +350,8 @@ class PayMoney extends StatelessWidget {
             'Add Note (Optional)',
             style: GoogleFonts.montserrat(
               fontSize: 14,
-              fontWeight: FontWeight.w500,
               color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
             ),
           ),
           SizedBox(height: 10),
@@ -379,10 +368,7 @@ class PayMoney extends StatelessWidget {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(
-                  width: 1,
-                  color: Colors.grey[300]!,
-                ),
+                borderSide: BorderSide(width: 1, color: Colors.grey[300]!),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
@@ -400,13 +386,13 @@ class PayMoney extends StatelessWidget {
           SizedBox(height: 20),
           Row(
             children: [
-              buildQuickAmountChip('₹100'),
+              quickAmountChip('₹100'),
               SizedBox(width: 10),
-              buildQuickAmountChip('₹500'),
+              quickAmountChip('₹500'),
               SizedBox(width: 10),
-              buildQuickAmountChip('₹1000'),
+              quickAmountChip('₹1000'),
               SizedBox(width: 10),
-              buildQuickAmountChip('₹2000'),
+              quickAmountChip('₹2000'),
             ],
           ),
         ],
@@ -414,12 +400,12 @@ class PayMoney extends StatelessWidget {
     );
   }
 
-  Widget buildQuickAmountChip(String amount) {
+  Widget quickAmountChip(String amount) {
     return InkWell(
       onTap: () {},
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
         decoration: BoxDecoration(
           color: Color(0xFF334D8F).withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
@@ -457,13 +443,13 @@ class PayMoney extends StatelessWidget {
       child: ElevatedButton(
         onPressed: () {},
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF334D8F),
+          elevation: 0,
           foregroundColor: Colors.white,
+          backgroundColor: Color(0xFF334D8F),
           padding: EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          elevation: 0,
         ),
         child: Text(
           'Proceed to Pay',

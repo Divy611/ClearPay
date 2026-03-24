@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:clearpay/state/appstate.dart';
 import 'package:clearpay/auth/onboarding.dart';
 import 'package:clearpay/state/authstate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -49,13 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: EdgeInsets.only(right: 10),
             child: IconButton(
               onPressed: () {
-                var app = Provider.of<AppState>(context, listen: false);
-                app.pageController.animateToPage(
-                  0,
-                  curve: Curves.easeInOut,
-                  duration: Duration(milliseconds: 300),
-                );
-                app.setPageIndex = 0;
+                Navigator.pop(context);
               },
               icon: Icon(FontAwesomeIcons.house, color: Colors.white, size: 20),
             ),
@@ -68,6 +61,7 @@ class _ProfilePageState extends State<ProfilePage> {
             buildProfileHeader(),
             Column(
               children: [
+                SizedBox(height: 10),
                 qrCodeSection("clearpay/profile/${auth.userId}"),
                 actionButtons(),
               ],
@@ -138,19 +132,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ],
-            ),
-            SizedBox(height: 10),
-            TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              child: Text(
-                'Update Photo',
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.9),
-                ),
-              ),
             ),
           ],
         ),

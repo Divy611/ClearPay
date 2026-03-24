@@ -4,6 +4,13 @@ enum AuthStatus {
   LOGGED_IN,
 }
 
+enum RewardTier {
+  bronze,
+  silver,
+  gold,
+  platinum,
+}
+
 const USERS = 'Users';
 const REQUESTS = 'Requests';
 const TRANSACTIONS = 'Transactions';

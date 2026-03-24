@@ -153,26 +153,26 @@ class Wallet extends StatelessWidget {
                       ),
                     ],
                   ),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Color(0xFF334D8F),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 15,
-                      ),
-                    ),
-                    child: Text(
-                      'Add Money',
-                      style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
+                  //ElevatedButton(
+                  //  onPressed: () {},
+                  //  style: ElevatedButton.styleFrom(
+                  //    backgroundColor: Colors.white,
+                  //    foregroundColor: Color(0xFF334D8F),
+                  //    shape: RoundedRectangleBorder(
+                  //      borderRadius: BorderRadius.circular(10),
+                  //    ),
+                  //    padding: EdgeInsets.symmetric(
+                  //      vertical: 10,
+                  //      horizontal: 15,
+                  //    ),
+                  //  ),
+                  //  child: Text(
+                  //    'Add Money',
+                  //    style: GoogleFonts.montserrat(
+                  //      fontWeight: FontWeight.w600,
+                  //    ),
+                  //  ),
+                  //),
                 ],
               ),
             ),

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:clearpay/common/enums.dart';
 import 'package:clearpay/state/appstate.dart';
 import 'package:clearpay/auth/usermodel.dart';
@@ -14,60 +13,39 @@ class RequestsState extends AppState {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   List<RequestModel> get sentRequests {
-    if (_sentRequests == null) {
-      return [];
-    } else {
-      _sentRequests!.sort(
-        (a, b) => DateTime.parse(b.createdAt!).compareTo(
-          DateTime.parse(a.createdAt!),
-        ),
-      );
-      return _sentRequests!;
-    }
+    if (_sentRequests == null) return [];
+    _sentRequests!.sort(
+      (a, b) => DateTime.parse(b.createdAt!).compareTo(
+        DateTime.parse(a.createdAt!),
+      ),
+    );
+    return _sentRequests!;
   }
 
   List<RequestModel> get receivedRequests {
-    if (_receivedRequests == null) {
-      return [];
-    } else {
-      _receivedRequests!.sort(
-        (a, b) => DateTime.parse(b.createdAt!).compareTo(
-          DateTime.parse(a.createdAt!),
-        ),
-      );
-      return _receivedRequests!;
-    }
+    if (_receivedRequests == null) return [];
+    _receivedRequests!.sort(
+      (a, b) => DateTime.parse(b.createdAt!).compareTo(
+        DateTime.parse(a.createdAt!),
+      ),
+    );
+    return _receivedRequests!;
   }
 
-  List<RequestModel> get pendingSentRequests {
-    return sentRequests
-        .where((request) => request.status == "pending")
-        .toList();
-  }
+  List<RequestModel> get pendingSentRequests =>
+      sentRequests.where((r) => r.status == 'pending').toList();
 
-  List<RequestModel> get pendingReceivedRequests {
-    return receivedRequests
-        .where((request) => request.status == "pending")
-        .toList();
-  }
+  List<RequestModel> get pendingReceivedRequests =>
+      receivedRequests.where((r) => r.status == 'pending').toList();
 
   List<RequestModel> get completedRequests {
-    List<RequestModel> allCompleted = [];
-
-    if (_sentRequests != null) {
-      allCompleted.addAll(
-          _sentRequests!.where((request) => request.status != "pending"));
-    }
-
-    if (_receivedRequests != null) {
-      allCompleted.addAll(
-          _receivedRequests!.where((request) => request.status != "pending"));
-    }
-
-    allCompleted.sort((a, b) =>
+    final all = <RequestModel>[
+      ...?_sentRequests?.where((r) => r.status != 'pending'),
+      ...?_receivedRequests?.where((r) => r.status != 'pending'),
+    ];
+    all.sort((a, b) =>
         DateTime.parse(b.createdAt!).compareTo(DateTime.parse(a.createdAt!)));
-
-    return allCompleted;
+    return all;
   }
 
   Future<void> createRequest(RequestModel request) async {
@@ -77,11 +55,11 @@ class RequestsState extends AppState {
       request.id = docRef.id;
       await docRef.set(request.toJson());
       isBusy = false;
+      notifyListeners();
     } catch (e) {
       isBusy = false;
-      if (kDebugMode) {
-        print("Error creating request: $e");
-      }
+      notifyListeners();
+      rethrow;
     }
   }
 
@@ -91,47 +69,44 @@ class RequestsState extends AppState {
       await firestore
           .collection(REQUESTS)
           .doc(requestId)
-          .update({"status": status});
+          .update({'status': status});
       isBusy = false;
+      notifyListeners();
     } catch (e) {
       isBusy = false;
-      if (kDebugMode) {
-        print("Error updating request: $e");
-      }
+      notifyListeners();
+      rethrow;
     }
   }
 
   Future<void> fetchRequests(String userId) async {
     try {
       isBusy = true;
-
-      // Initialize lists
       _sentRequests = [];
       _receivedRequests = [];
-
-      // Fetch sent requests
-      final sentSnapshot = await firestore
-          .collection(REQUESTS)
-          .where("requesterId", isEqualTo: userId)
-          .get();
-
-      for (var doc in sentSnapshot.docs) {
-        _sentRequests!.add(RequestModel.fromJson(doc.data()));
-      }
-
-      // Fetch received requests
-      final receivedSnapshot = await firestore
-          .collection(REQUESTS)
-          .where("recipientId", isEqualTo: userId)
-          .get();
-
-      for (var doc in receivedSnapshot.docs) {
-        _receivedRequests!.add(RequestModel.fromJson(doc.data()));
-      }
-
+      final results = await Future.wait([
+        firestore
+            .collection(REQUESTS)
+            .where('requesterId', isEqualTo: userId)
+            .get(),
+        firestore
+            .collection(REQUESTS)
+            .where('recipientId', isEqualTo: userId)
+            .get(),
+      ]);
+      _sentRequests = results[0]
+          .docs
+          .map((doc) => RequestModel.fromJson(doc.data()))
+          .toList();
+      _receivedRequests = results[1]
+          .docs
+          .map((doc) => RequestModel.fromJson(doc.data()))
+          .toList();
       isBusy = false;
+      notifyListeners();
     } catch (e) {
       isBusy = false;
+      notifyListeners();
     }
   }
 
@@ -139,65 +114,91 @@ class RequestsState extends AppState {
       TransactionState transactionState) async {
     try {
       isBusy = true;
-
-      // Check if user has enough balance
-      int amount = int.parse(request.amount!);
-      if (authState.userModel!.balance! < amount) {
-        throw "Insufficient balance";
+      final amount = double.tryParse(request.amount ?? '');
+      if (amount == null || amount <= 0) throw 'Invalid amount';
+      final currentBalance = (authState.userModel!.balance ?? 0).toDouble();
+      if (currentBalance < amount) {
+        throw 'Insufficient balance. You need ₹${(amount - currentBalance).toStringAsFixed(2)} more.';
       }
-
-      // Update sender's balance
-      int remAmount = authState.userModel!.balance! - amount;
-      authState.userModel!.balance = remAmount;
-      var user = UserModel(
-        balance: remAmount,
+      final newSenderBalance = (currentBalance - amount).toInt();
+      authState.userModel!.balance = newSenderBalance;
+      final updatedSender = UserModel(
+        balance: newSenderBalance,
         email: authState.userModel!.email,
         userId: authState.userModel!.userId,
         profilePic: authState.userModel!.profilePic,
         displayName: authState.userModel!.displayName,
       );
-      authState.updateUserProfile(user);
-
-      // Update recipient's balance
-      QuerySnapshot recipientQuery = await firestore
+      await authState.updateUserProfile(updatedSender);
+      final recipientQuery = await firestore
           .collection(USERS)
           .where('userId', isEqualTo: request.requesterId)
           .limit(1)
           .get();
-
-      if (recipientQuery.docs.isEmpty) {
-        throw "Recipient not found";
-      }
-
-      DocumentSnapshot recipientSnapshot = recipientQuery.docs.first;
-      var recipientData = recipientSnapshot.data() as Map<String, dynamic>;
-      var recipientBalance = recipientData['balance'] ?? 0;
-
-      // Update recipient's balance
-      int recipientNewBalance = recipientBalance + amount;
+      if (recipientQuery.docs.isEmpty) throw 'Recipient not found';
+      final recipientDoc = recipientQuery.docs.first;
+      final recipientBalance = (recipientDoc.data()['balance'] ?? 0) as num;
       await firestore
           .collection(USERS)
           .doc(request.requesterId)
-          .update({'balance': recipientNewBalance});
-
-      // Record transaction
-      TransactionModel transaction = TransactionModel(
-        amount: amount,
-        recipientName: request.requesterName,
-        senderId: authState.userModel!.userId,
-        createdAt: DateTime.now().toString(),
-        recipientId: request.requesterId,
-        senderName: authState.userModel!.displayName,
+          .update({'balance': recipientBalance + amount.toInt()});
+      transactionState.recordTransaction(
+        TransactionModel(
+          amount: amount.toInt(),
+          recipientName: request.requesterName,
+          senderId: authState.userModel!.userId,
+          createdAt: DateTime.now().toString(),
+          recipientId: request.requesterId,
+          senderName: authState.userModel!.displayName,
+        ),
       );
-      transactionState.recordTransaction(transaction);
-
-      // Update request status
-      await updateRequestStatus(request.id!, "completed");
-
+      await updateRequestStatus(request.id!, 'completed');
       isBusy = false;
+      notifyListeners();
     } catch (e) {
       isBusy = false;
+      notifyListeners();
       throw e.toString();
+    }
+  }
+
+  Future<List<UserModel>> searchUsers(
+      String query, String currentUserId) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      final normalised = query.trim().toLowerCase();
+      final results = <UserModel>[];
+      final seenIds = <String>{};
+      final nameSnapshot = await firestore
+          .collection(USERS)
+          .where('displayNameLower', isGreaterThanOrEqualTo: normalised)
+          .where('displayNameLower', isLessThanOrEqualTo: '$normalised\uf8ff')
+          .limit(15)
+          .get();
+      for (final doc in nameSnapshot.docs) {
+        final u = UserModel.fromJson(doc.data());
+        if (u.userId != currentUserId && !seenIds.contains(u.userId)) {
+          results.add(u);
+          seenIds.add(u.userId!);
+        }
+      }
+      if (normalised.contains('@')) {
+        final emailSnapshot = await firestore
+            .collection(USERS)
+            .where('email', isEqualTo: normalised)
+            .limit(5)
+            .get();
+        for (final doc in emailSnapshot.docs) {
+          final u = UserModel.fromJson(doc.data());
+          if (u.userId != currentUserId && !seenIds.contains(u.userId)) {
+            results.add(u);
+            seenIds.add(u.userId!);
+          }
+        }
+      }
+      return results;
+    } catch (e) {
+      return [];
     }
   }
 }

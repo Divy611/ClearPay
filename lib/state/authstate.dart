@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:async';
 import 'appState.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:clearpay/common/enums.dart';
 import 'package:clearpay/common/locator.dart';
 import 'package:clearpay/auth/usermodel.dart';
@@ -63,7 +62,7 @@ class AuthState extends AppState {
     notifyListeners();
   }
 
-  databaseInit() {
+  void databaseInit() {
     try {
       if (_profileQuery == null) {
         firestore
@@ -72,23 +71,23 @@ class AuthState extends AppState {
             .snapshots()
             .listen(onProfileChanged);
       }
-    } catch (error) {
-      if (kDebugMode) {
-        print(error);
-      }
-    }
+    } catch (_) {}
   }
 
   Future<String?> signIn(
       BuildContext context, String email, String password) async {
     try {
       isBusy = true;
-      var result = await firebaseAuth.signInWithEmailAndPassword(
+      final result = await firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       user = result.user;
       userId = user!.uid;
+      await getProfileUser();
+      authStatus = AuthStatus.LOGGED_IN;
+      isBusy = false;
+      notifyListeners();
       return user!.uid;
     } catch (error) {
       isBusy = false;
@@ -101,17 +100,18 @@ class AuthState extends AppState {
       {required BuildContext context, required String password}) async {
     try {
       isBusy = true;
-      var result = await firebaseAuth.createUserWithEmailAndPassword(
+      final result = await firebaseAuth.createUserWithEmailAndPassword(
         email: userModel.email!,
         password: password,
       );
       user = result.user;
       authStatus = AuthStatus.LOGGED_IN;
-      result.user!.updateDisplayName(userModel.displayName);
-      result.user!.updatePhotoURL(userModel.profilePic);
+      await result.user!.updateDisplayName(userModel.displayName);
+      await result.user!.updatePhotoURL(userModel.profilePic);
       _userModel = userModel;
       _userModel!.userId = user!.uid;
       createUser(_userModel!, newUser: true);
+      notifyListeners();
       return user!.uid;
     } catch (error) {
       isBusy = false;
@@ -140,10 +140,12 @@ class AuthState extends AppState {
         authStatus = AuthStatus.NOT_LOGGED_IN;
       }
       isBusy = false;
+      notifyListeners();
       return user;
     } catch (error) {
       isBusy = false;
       authStatus = AuthStatus.NOT_LOGGED_IN;
+      notifyListeners();
       return null;
     }
   }
@@ -158,26 +160,20 @@ class AuthState extends AppState {
   }
 
   Future<void> sendEmailVerification(BuildContext context) async {
-    User user = firebaseAuth.currentUser!;
-    user.sendEmailVerification().then((_) {}).catchError((error) {});
+    final currentUser = firebaseAuth.currentUser!;
+    currentUser.sendEmailVerification().then((_) {}).catchError((error) {});
   }
 
   Future<bool> emailVerified() async {
-    User user = firebaseAuth.currentUser!;
-    return user.emailVerified;
+    final currentUser = firebaseAuth.currentUser!;
+    return currentUser.emailVerified;
   }
 
   Future<void> forgetPassword(String email,
       {required BuildContext context}) async {
     try {
-      await firebaseAuth
-          .sendPasswordResetEmail(email: email)
-          .then((value) {})
-          .catchError((error) {});
-    } catch (error) {
-      // ignore: void_checks
-      return Future.value(false);
-    }
+      await firebaseAuth.sendPasswordResetEmail(email: email);
+    } catch (_) {}
   }
 
   Future<void> updateUserProfile(UserModel? userModel,
@@ -187,52 +183,38 @@ class AuthState extends AppState {
         createUser(userModel!);
       } else {
         if (image != null) {
-          var name = userModel!.displayName ?? user!.displayName;
-          firebaseAuth.currentUser!.updateDisplayName(name);
-          firebaseAuth.currentUser!.updatePhotoURL(userModel.profilePic);
+          final name = userModel!.displayName ?? user!.displayName;
+          await firebaseAuth.currentUser!.updateDisplayName(name);
+          await firebaseAuth.currentUser!.updatePhotoURL(userModel.profilePic);
         }
-        if (userModel != null) {
-          createUser(userModel);
-        } else {
-          createUser(_userModel!);
-        }
+        createUser(userModel ?? _userModel!);
       }
-    } catch (error) {
-      if (kDebugMode) {
-        print(error);
-      }
-    }
+    } catch (error) {}
   }
 
   Future<UserModel?> getUserDetail(String userId) async {
-    UserModel? user;
-    var event = await firestore.collection(USERS).doc(userId).get();
+    final event = await firestore.collection(USERS).doc(userId).get();
     final map = event.data();
     if (map != null) {
-      user = UserModel.fromJson(map);
+      return UserModel.fromJson(map);
       //user.key = event.id;
-      return user;
-    } else {
-      return null;
     }
+    return null;
   }
 
-  getProfileUser({String? userProfileId}) async {
+  Future<void> getProfileUser({String? userProfileId}) async {
     try {
       isBusy = true;
       _profileUserModelList ??= [];
       userProfileId = userProfileId ?? user!.uid;
-      DocumentSnapshot documentSnapshot =
-          await userCollection.doc(userProfileId).get();
-      var map = documentSnapshot.data() as Map<dynamic, dynamic>;
-      if (documentSnapshot.data() != null) {
+      final documentSnapshot = await userCollection.doc(userProfileId).get();
+      final map = documentSnapshot.data() as Map<dynamic, dynamic>?;
+      if (map != null) {
         _profileUserModelList!.add(UserModel.fromJson(map));
         if (userProfileId == user!.uid) {
           _userModel = _profileUserModelList!.last;
           //_userModel!.isVerified = user!.emailVerified;
-          if (user!.emailVerified) {
-            reloadUser();
-          }
+          if (user!.emailVerified) reloadUser();
         }
       }
       isBusy = false;
@@ -242,12 +224,10 @@ class AuthState extends AppState {
   }
 
   void onProfileChanged(DocumentSnapshot event) {
-    var map = event.data() as Map<dynamic, dynamic>;
-    if (event.data() != null) {
+    final map = event.data() as Map<dynamic, dynamic>?;
+    if (map != null) {
       final updatedUser = UserModel.fromJson(map);
-      if (updatedUser.userId == user!.uid) {
-        _userModel = updatedUser;
-      }
+      if (updatedUser.userId == user?.uid) _userModel = updatedUser;
       notifyListeners();
     }
   }

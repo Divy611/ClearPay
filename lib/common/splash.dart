@@ -16,11 +16,11 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
-  bool isInitializing = true;
   int currentMessageIndex = 0;
   late AnimationController controller;
   late Animation<double> fadeAnimation;
   late Animation<double> rotateAnimation;
+  late AnimationController messageController;
   final List<String> loadingMessages = [
     "Securing connection...",
     "Loading your dashboard...",
@@ -30,57 +30,64 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   @override
   void initState() {
+    super.initState();
     controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1000),
     );
     fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: controller, curve: Curves.easeInOut),
     );
     rotateAnimation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
       CurvedAnimation(parent: controller, curve: Curves.easeInOut),
     );
     controller.repeat(reverse: false);
-    WidgetsBinding.instance.addPostFrameCallback((_) => timer());
-    super.initState();
+    messageController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    messageController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          setState(() {
+            currentMessageIndex =
+                (currentMessageIndex + 1) % loadingMessages.length;
+          });
+        }
+        messageController.forward(from: 0);
+      }
+    });
+    messageController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) => init());
   }
 
   @override
   void dispose() {
     controller.dispose();
+    messageController.dispose();
     super.dispose();
   }
 
-  void timer() async {
+  Future<void> init() async {
     try {
-      await Future.delayed(Duration(milliseconds: 1000));
-      var auth = Provider.of<AuthState>(context, listen: false);
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (!mounted) return;
+      final auth = Provider.of<AuthState>(context, listen: false);
       await auth.getCurrentUser();
-      await Future.delayed(Duration(milliseconds: 500));
-      if (mounted) {
-        setState(() {
-          isInitializing = false;
-        });
-      }
-    } catch (error) {
-      if (mounted) {
-        var auth = Provider.of<AuthState>(context, listen: false);
-        auth.authStatus = AuthStatus.NOT_LOGGED_IN;
-        setState(() {
-          isInitializing = false;
-        });
-      }
+    } catch (_) {
+      if (!mounted) return;
+      final auth = Provider.of<AuthState>(context, listen: false);
+      auth.authStatus = AuthStatus.NOT_LOGGED_IN;
+      // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+      auth.notifyListeners();
     }
   }
 
-  Widget body() {
+  Widget splashBody() {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -109,20 +116,20 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                         ),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(25),
+                        padding: const EdgeInsets.all(25),
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white.withOpacity(0.15),
                           ),
-                          child: Padding(padding: EdgeInsets.all(15)),
+                          child: const Padding(padding: EdgeInsets.all(15)),
                         ),
                       ),
                     ),
                   );
                 },
               ),
-              SizedBox(height: 50),
+              const SizedBox(height: 50),
               FadeTransition(
                 opacity: fadeAnimation,
                 child: Text(
@@ -135,7 +142,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              SizedBox(height: 13),
+              const SizedBox(height: 13),
               FadeTransition(
                 opacity: fadeAnimation,
                 child: Text(
@@ -147,23 +154,23 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              SizedBox(height: 60),
+              const SizedBox(height: 60),
               SizedBox(
                 width: 40,
                 height: 40,
                 child: Platform.isIOS
-                    ? CupertinoActivityIndicator(
+                    ? const CupertinoActivityIndicator(
                         radius: 13,
                         color: Colors.white,
                       )
-                    : CircularProgressIndicator(
+                    : const CircularProgressIndicator(
                         strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
               ),
-              SizedBox(height: 25),
+              const SizedBox(height: 25),
               AnimatedSwitcher(
-                duration: Duration(milliseconds: 500),
+                duration: const Duration(milliseconds: 500),
                 child: Text(
                   loadingMessages[currentMessageIndex],
                   key: ValueKey<int>(currentMessageIndex),
@@ -183,13 +190,14 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    var auth = Provider.of<AuthState>(context);
-    return Scaffold(
-      body: auth.authStatus == AuthStatus.NOT_DETERMINED
-          ? body()
-          : auth.authStatus == AuthStatus.NOT_LOGGED_IN
-              ? OnboardingPage()
-              : DashBoard(),
-    );
+    final auth = Provider.of<AuthState>(context);
+    switch (auth.authStatus) {
+      case AuthStatus.LOGGED_IN:
+        return const DashBoard();
+      case AuthStatus.NOT_LOGGED_IN:
+        return const OnboardingPage();
+      case AuthStatus.NOT_DETERMINED:
+        return Scaffold(body: splashBody());
+    }
   }
 }

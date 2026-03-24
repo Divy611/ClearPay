@@ -22,10 +22,10 @@ class _SignInState extends State<SignIn> {
 
   @override
   void initState() {
+    super.initState();
     loader = CustomLoader();
     emailController = TextEditingController();
     passwordController = TextEditingController();
-    super.initState();
   }
 
   @override
@@ -35,67 +35,72 @@ class _SignInState extends State<SignIn> {
     super.dispose();
   }
 
-  static bool validateEmail(String email) {
-    String p =
-        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
-    RegExp regExp = RegExp(p);
-    var status = regExp.hasMatch(email);
-    return status;
+  static bool _validateEmail(String email) {
+    const pattern =
+        r'^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
+    return RegExp(pattern).hasMatch(email);
   }
 
-  static bool validateCredentials(
-      BuildContext context, String? email, String? password) {
-    if (email == null || email.isEmpty) {
-      SnackBar(content: Text('Please enter email id'));
-      return false;
-    } else if (password == null || password.isEmpty) {
-      SnackBar(content: Text('Please enter password'));
-      return false;
-    } else if (password.length < 8) {
-      SnackBar(content: Text('Password must be 8 character long'));
+  void showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message,
+            style: GoogleFonts.montserrat(fontSize: 13, color: Colors.white)),
+        backgroundColor: Colors.red[600],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  bool validateCredentials(String email, String password) {
+    if (email.isEmpty) {
+      showError('Please enter your email address.');
       return false;
     }
-    var status = validateEmail(email);
-    if (!status) {
-      SnackBar(content: Text('Please enter valid email id'));
+    if (!_validateEmail(email)) {
+      showError('Please enter a valid email address.');
+      return false;
+    }
+    if (password.isEmpty) {
+      showError('Please enter your password.');
+      return false;
+    }
+    if (password.length < 8) {
+      showError('Password must be at least 8 characters.');
       return false;
     }
     return true;
   }
 
-  void signin() async {
-    var state = Provider.of<AuthState>(context, listen: false);
-    if (state.isBusy) {
-      return;
-    }
+  Future<void> signin() async {
+    final state = Provider.of<AuthState>(context, listen: false);
+    if (state.isBusy || isLoading) return;
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+    if (!validateCredentials(email, password)) return;
+    setState(() => isLoading = true);
     loader.showLoader(context);
-    var isValid = validateCredentials(
-        context, emailController.text, passwordController.text);
-    if (isValid) {
-      state.signIn(context, emailController.text, passwordController.text).then(
-        (status) {
-          if (state.user != null) {
-            loader.hideLoader();
-            Navigator.pop(context);
-            widget.loginCallback!();
-          } else {
-            loader.hideLoader();
-          }
-        },
-      );
+    final uid = await state.signIn(context, email, password);
+    loader.hideLoader();
+    if (!mounted) return;
+    setState(() => isLoading = false);
+    if (uid != null) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
-      loader.hideLoader();
+      showError('Sign in failed. Please check your credentials.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    var auth = Provider.of<AuthState>(context);
     return Scaffold(
       body: Stack(
         children: [
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -106,7 +111,7 @@ class _SignInState extends State<SignIn> {
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,14 +124,14 @@ class _SignInState extends State<SignIn> {
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.1),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           size: 50,
                           color: Colors.white,
                           FontAwesomeIcons.wallet,
                         ),
                       ),
                     ),
-                    SizedBox(height: 30),
+                    const SizedBox(height: 30),
                     Center(
                       child: Text(
                         'Welcome Back',
@@ -137,7 +142,7 @@ class _SignInState extends State<SignIn> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Center(
                       child: Text(
                         'Sign in to continue to your account',
@@ -147,7 +152,7 @@ class _SignInState extends State<SignIn> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 50),
+                    const SizedBox(height: 50),
                     Text(
                       'Email',
                       style: GoogleFonts.montserrat(
@@ -156,7 +161,7 @@ class _SignInState extends State<SignIn> {
                         color: Colors.white.withOpacity(0.9),
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.1),
@@ -164,12 +169,13 @@ class _SignInState extends State<SignIn> {
                       ),
                       child: TextField(
                         controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
                         style: GoogleFonts.montserrat(
                           fontSize: 16,
                           color: Colors.white,
                         ),
                         decoration: InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
+                          contentPadding: const EdgeInsets.symmetric(
                             vertical: 18,
                             horizontal: 20,
                           ),
@@ -186,7 +192,7 @@ class _SignInState extends State<SignIn> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
                     Text(
                       'Password',
                       style: GoogleFonts.montserrat(
@@ -195,7 +201,7 @@ class _SignInState extends State<SignIn> {
                         color: Colors.white.withOpacity(0.9),
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.1),
@@ -216,13 +222,9 @@ class _SignInState extends State<SignIn> {
                           border: InputBorder.none,
                           hintText: 'Enter your password',
                           hintStyle: GoogleFonts.montserrat(
-                            color: Colors.white.withOpacity(0.5),
-                          ),
-                          prefixIcon: Icon(
-                            size: 18,
-                            FontAwesomeIcons.lock,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
+                              color: Colors.white.withOpacity(0.5)),
+                          prefixIcon: Icon(FontAwesomeIcons.lock,
+                              size: 18, color: Colors.white.withOpacity(0.7)),
                           suffixIcon: IconButton(
                             icon: Icon(
                               size: 18,
@@ -231,11 +233,9 @@ class _SignInState extends State<SignIn> {
                                   : FontAwesomeIcons.eye,
                               color: Colors.white.withOpacity(0.7),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                isPasswordVisible = !isPasswordVisible;
-                              });
-                            },
+                            onPressed: () => setState(
+                              () => isPasswordVisible = !isPasswordVisible,
+                            ),
                           ),
                         ),
                       ),
@@ -293,6 +293,8 @@ class _SignInState extends State<SignIn> {
                         ),
                         TextButton(
                           onPressed: () {
+                            final auth =
+                                Provider.of<AuthState>(context, listen: false);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -325,11 +327,11 @@ class _SignInState extends State<SignIn> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        buildSocialButton(FontAwesomeIcons.google),
+                        socialButton(FontAwesomeIcons.google),
                         SizedBox(width: 20),
-                        buildSocialButton(FontAwesomeIcons.apple),
+                        socialButton(FontAwesomeIcons.apple),
                         SizedBox(width: 20),
-                        buildSocialButton(FontAwesomeIcons.facebook),
+                        socialButton(FontAwesomeIcons.facebook),
                       ],
                     ),
                     SizedBox(height: 30),
@@ -343,7 +345,7 @@ class _SignInState extends State<SignIn> {
     );
   }
 
-  Widget buildSocialButton(IconData icon) {
+  Widget socialButton(IconData icon) {
     return Container(
       width: 60,
       height: 60,

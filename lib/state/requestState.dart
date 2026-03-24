@@ -132,7 +132,6 @@ class RequestsState extends AppState {
       isBusy = false;
     } catch (e) {
       isBusy = false;
-      print("Error fetching requests: $e");
     }
   }
 

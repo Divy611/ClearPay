@@ -9,16 +9,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class SignUp extends StatefulWidget {
-  final VoidCallback? loginCallback;
-  const SignUp({super.key, this.loginCallback});
+  final VoidCallback loginCallback;
+  const SignUp({super.key, required this.loginCallback});
   @override
-  _SignUpState createState() => _SignUpState();
+  State<SignUp> createState() => _SignUpState();
 }
 
 class _SignUpState extends State<SignUp> {
+  bool isLoading = false;
   bool isPasswordVisible = false;
   bool isConfirmPasswordVisible = false;
-  late CustomLoader loader = CustomLoader();
+  late final CustomLoader loader = CustomLoader();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -26,8 +27,34 @@ class _SignUpState extends State<SignUp> {
   final TextEditingController passwordController = TextEditingController();
 
   @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    confirmController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  void showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        margin: EdgeInsets.all(16),
+        backgroundColor: Colors.red[600],
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        content: Text(
+          message,
+          style: GoogleFonts.montserrat(fontSize: 13, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    var auth = Provider.of<AuthState>(context, listen: false);
+    final auth = Provider.of<AuthState>(context, listen: false);
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -52,33 +79,29 @@ class _SignUpState extends State<SignUp> {
                   ),
                 ),
                 SizedBox(height: 8),
-                Text(
-                  'Sign up to get started!',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                ),
+                Text('Sign up to get started!',
+                    style: GoogleFonts.montserrat(
+                        fontSize: 16, color: Colors.white.withOpacity(0.7))),
                 SizedBox(height: 40),
-                buildTextField(
+                textField(
                   label: 'Full Name',
                   controller: nameController,
                   icon: FontAwesomeIcons.user,
                 ),
                 SizedBox(height: 20),
-                buildTextField(
+                textField(
                   label: 'Email',
                   controller: emailController,
                   icon: FontAwesomeIcons.envelope,
                 ),
                 SizedBox(height: 20),
-                buildTextField(
+                textField(
                   label: 'Phone',
                   controller: phoneController,
                   icon: FontAwesomeIcons.phone,
                 ),
                 SizedBox(height: 20),
-                buildTextField(
+                textField(
                   isPassword: true,
                   label: 'Password',
                   icon: FontAwesomeIcons.lock,
@@ -91,7 +114,7 @@ class _SignUpState extends State<SignUp> {
                   },
                 ),
                 SizedBox(height: 20),
-                buildTextField(
+                textField(
                   isPassword: true,
                   label: 'Confirm Password',
                   icon: FontAwesomeIcons.lock,
@@ -108,24 +131,23 @@ class _SignUpState extends State<SignUp> {
                   width: double.infinity,
                   height: 55,
                   child: TextButton(
-                    onPressed: () {
-                      signUp(context);
-                    },
+                    onPressed: isLoading ? null : signUp,
                     style: ElevatedButton.styleFrom(
                       elevation: 0,
                       backgroundColor: Colors.white,
                       foregroundColor: Color(0xFF334D8F),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
+                          borderRadius: BorderRadius.circular(15)),
                     ),
-                    child: Text(
-                      'SIGN UP',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: isLoading
+                        ? CircularProgressIndicator(color: Color(0xFF334D8F))
+                        : Text(
+                            'SIGN UP',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
                 SizedBox(height: 20),
@@ -172,11 +194,11 @@ class _SignUpState extends State<SignUp> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    buildSocialButton(FontAwesomeIcons.google),
+                    socialButton(FontAwesomeIcons.google),
                     SizedBox(width: 20),
-                    buildSocialButton(FontAwesomeIcons.apple),
+                    socialButton(FontAwesomeIcons.apple),
                     SizedBox(width: 20),
-                    buildSocialButton(FontAwesomeIcons.facebook),
+                    socialButton(FontAwesomeIcons.facebook),
                   ],
                 ),
               ],
@@ -187,7 +209,7 @@ class _SignUpState extends State<SignUp> {
     );
   }
 
-  Widget buildTextField({
+  Widget textField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -203,10 +225,14 @@ class _SignUpState extends State<SignUp> {
       child: TextField(
         controller: controller,
         obscureText: isPassword && !isPasswordVisible,
-        style: GoogleFonts.montserrat(
-          fontSize: 16,
-          color: Colors.white,
-        ),
+        keyboardType: isPassword
+            ? TextInputType.visiblePassword
+            : label == 'Phone'
+                ? TextInputType.phone
+                : label == 'Email'
+                    ? TextInputType.emailAddress
+                    : TextInputType.name,
+        style: GoogleFonts.montserrat(fontSize: 16, color: Colors.white),
         decoration: InputDecoration(
           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           border: InputBorder.none,
@@ -236,7 +262,7 @@ class _SignUpState extends State<SignUp> {
     );
   }
 
-  Widget buildSocialButton(IconData icon) {
+  Widget socialButton(IconData icon) {
     return Container(
       width: 60,
       height: 60,
@@ -248,43 +274,55 @@ class _SignUpState extends State<SignUp> {
     );
   }
 
-  void signUp(BuildContext context) {
-    if (emailController.text.isEmpty) {
-      SnackBar(content: Text('Please enter a valid name'));
+  Future<void> signUp() async {
+    final confirm = confirmController.text;
+    final name = nameController.text.trim();
+    final password = passwordController.text;
+    final phone = phoneController.text.trim();
+    final email = emailController.text.trim().toLowerCase();
+    if (name.isEmpty) {
+      showError('Please enter your full name.');
       return;
     }
-    if (emailController.text.length > 40) {
-      SnackBar(content: Text('Email length cannot exceed 40 characters'));
+    if (name.length > 40) {
+      showError('Name cannot exceed 40 characters.');
       return;
     }
-    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-      SnackBar(content: Text('Please fill all the fields'));
-      return;
-    } else if (passwordController.text != confirmController.text) {
-      SnackBar(content: Text('Your passwords did not match'));
+    if (email.isEmpty) {
+      showError('Please enter your email address.');
       return;
     }
+    if (password.isEmpty || confirm.isEmpty) {
+      showError('Please fill in all fields.');
+      return;
+    }
+    if (password.length < 8) {
+      showError('Password must be at least 8 characters.');
+      return;
+    }
+    if (password != confirm) {
+      showError('Passwords do not match.');
+      return;
+    }
+    setState(() => isLoading = true);
     loader.showLoader(context);
-    var state = Provider.of<AuthState>(context, listen: false);
-    UserModel user = UserModel(
+    final state = Provider.of<AuthState>(context, listen: false);
+    final user = UserModel(
       balance: 0,
-      phone: phoneController.text,
-      displayName: nameController.text,
-      email: emailController.text.toLowerCase(),
+      phone: phone,
+      email: email,
+      displayName: name,
       profilePic:
           'https://images.pexels.com/photos/13221344/pexels-photo-13221344.jpeg?auto=compress&cs=tinysrgb&w=800&lazy=load',
     );
-    state
-        .signUp(user, context: context, password: passwordController.text)
-        .then((status) {})
-        .whenComplete(
-      () {
-        loader.hideLoader();
-        if (state.authStatus == AuthStatus.LOGGED_IN) {
-          Navigator.pop(context);
-          if (widget.loginCallback != null) widget.loginCallback!();
-        }
-      },
-    );
+    await state.signUp(user, context: context, password: password);
+    setState(() => isLoading = false);
+    if (state.authStatus == AuthStatus.LOGGED_IN) {
+      loader.hideLoader();
+      Navigator.popUntil(context, (route) => route.isFirst);
+      widget.loginCallback();
+    } else {
+      showError('Sign up failed. Please try again.');
+    }
   }
 }

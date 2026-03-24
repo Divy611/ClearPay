@@ -100,7 +100,7 @@ class PayMoney extends StatelessWidget {
             ),
             SizedBox(height: 5),
             Text(
-              'Payment ID: ${getEmailPrefix(context)}@ebixcash',
+              'Payment ID: ${getEmailPrefix(context)}@clearpay',
               style: GoogleFonts.montserrat(
                 fontSize: 12,
                 color: Colors.white.withOpacity(0.8),

@@ -144,7 +144,7 @@ class Wallet extends StatelessWidget {
                       ),
                       SizedBox(height: 5),
                       Text(
-                        '${getEmailPrefix(context)}@ebixcash',
+                        '${getEmailPrefix(context)}@clearpay',
                         style: GoogleFonts.montserrat(
                           fontSize: 14,
                           color: Colors.white,

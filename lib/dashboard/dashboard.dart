@@ -157,7 +157,7 @@ class DashBoard extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Payment ID: ${getEmailPrefix(context)}@ebixcash',
+                                      'Payment ID: ${getEmailPrefix(context)}@clearpay',
                                       style: GoogleFonts.montserrat(
                                         fontSize: 13,
                                         color: Colors.white,
@@ -169,16 +169,6 @@ class DashBoard extends StatelessWidget {
                                       auth.user!.email ?? 'Loading...',
                                       style: GoogleFonts.montserrat(
                                         fontSize: 11,
-                                        color: Colors.white.withOpacity(0.7),
-                                      ),
-                                    ),
-                                    SizedBox(height: 5),
-                                    Text(
-                                      auth.user?.phoneNumber == null
-                                          ? '+91 999-999-9999'
-                                          : auth.user!.phoneNumber!,
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 12,
                                         color: Colors.white.withOpacity(0.7),
                                       ),
                                     ),

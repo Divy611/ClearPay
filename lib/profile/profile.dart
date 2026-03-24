@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:clearpay/state/appstate.dart';
+import 'package:clearpay/auth/onboarding.dart';
 import 'package:clearpay/state/authstate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:clearpay/settings/settings.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -66,13 +68,6 @@ class _ProfilePageState extends State<ProfilePage> {
             buildProfileHeader(),
             Column(
               children: [
-                profileDetails(
-                  auth.user!.displayName ?? 'Full Name',
-                  auth.user?.phoneNumber == null
-                      ? '+91 999-999-9999'
-                      : auth.user!.phoneNumber!,
-                  auth.user!.email!,
-                ),
                 qrCodeSection("clearpay/profile/${auth.userId}"),
                 actionButtons(),
               ],
@@ -306,25 +301,34 @@ class _ProfilePageState extends State<ProfilePage> {
             'Privacy Settings',
             FontAwesomeIcons.lock,
             Colors.green[600]!,
-          ),
-          SizedBox(height: 15),
-          actionButton(
-            'Help & Support',
-            FontAwesomeIcons.circleQuestion,
-            Colors.orange[600]!,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Settings()),
+              );
+            },
           ),
           SizedBox(height: 15),
           actionButton(
             'Logout',
             FontAwesomeIcons.rightFromBracket,
             Colors.red[600]!,
+            () {
+              var auth = Provider.of<AuthState>(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => OnboardingPage()),
+              );
+              auth.logoutCallback();
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget actionButton(String label, IconData icon, Color color) {
+  Widget actionButton(
+      String label, IconData icon, Color color, GestureTapCallback onTap) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -360,7 +364,7 @@ class _ProfilePageState extends State<ProfilePage> {
           FontAwesomeIcons.chevronRight,
           size: 16,
         ),
-        onTap: () {},
+        onTap: onTap,
       ),
     );
   }

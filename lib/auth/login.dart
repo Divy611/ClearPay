@@ -44,13 +44,15 @@ class _SignInState extends State<SignIn> {
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message,
-            style: GoogleFonts.montserrat(fontSize: 13, color: Colors.white)),
+        content: Text(
+          message,
+          style: GoogleFonts.montserrat(fontSize: 13, color: Colors.white),
+        ),
         backgroundColor: Colors.red[600],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
+        behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -111,7 +113,7 @@ class _SignInState extends State<SignIn> {
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 25),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -142,7 +144,7 @@ class _SignInState extends State<SignIn> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Center(
                       child: Text(
                         'Sign in to continue to your account',
@@ -175,10 +177,7 @@ class _SignInState extends State<SignIn> {
                           color: Colors.white,
                         ),
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 18,
-                            horizontal: 20,
-                          ),
+                          contentPadding: const EdgeInsets.all(20),
                           border: InputBorder.none,
                           hintText: 'Enter your email',
                           hintStyle: GoogleFonts.montserrat(
@@ -192,7 +191,7 @@ class _SignInState extends State<SignIn> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 25),
                     Text(
                       'Password',
                       style: GoogleFonts.montserrat(
@@ -216,15 +215,18 @@ class _SignInState extends State<SignIn> {
                         ),
                         decoration: InputDecoration(
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: 18,
+                            vertical: 15,
                             horizontal: 20,
                           ),
                           border: InputBorder.none,
                           hintText: 'Enter your password',
                           hintStyle: GoogleFonts.montserrat(
                               color: Colors.white.withOpacity(0.5)),
-                          prefixIcon: Icon(FontAwesomeIcons.lock,
-                              size: 18, color: Colors.white.withOpacity(0.7)),
+                          prefixIcon: Icon(
+                            size: 18,
+                            FontAwesomeIcons.lock,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               size: 18,
@@ -248,8 +250,8 @@ class _SignInState extends State<SignIn> {
                         child: Text(
                           'Forgot Password?',
                           style: GoogleFonts.montserrat(
-                            color: Colors.white.withOpacity(0.8),
                             fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.8),
                           ),
                         ),
                       ),

@@ -173,7 +173,7 @@ class GenerateQR extends StatelessWidget {
                       ),
                       SizedBox(width: 8),
                       Text(
-                        '${getEmailPrefix(context)}@ebixcash',
+                        '${getEmailPrefix(context)}@clearpay',
                         style: GoogleFonts.montserrat(
                           fontSize: 14,
                           color: Colors.grey[800],
